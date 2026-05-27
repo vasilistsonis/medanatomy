@@ -4,6 +4,7 @@ import { muscles } from "../data/muscles";
 import { mnemonics } from "../data/mnemonics";
 
 const asList = (value) => Array.isArray(value) ? value : [value].filter(Boolean);
+const getClinicalItems = (cn) => asList(cn.clinicalCorrelations || cn.clinical);
 
 function buildCards() {
   const cards = [];
@@ -21,12 +22,15 @@ function buildCards() {
       front: `${cn.name} (${cn.number})\nThrough which foramen does it exit the skull?`,
       back: cn.foramen,
     });
-    cn.clinicalCorrelations.slice(0, 1).forEach((c) => {
+    getClinicalItems(cn).slice(0, 1).forEach((c) => {
+      const condition = typeof c === "string" ? "Clinical correlation" : c.condition;
+      const description = typeof c === "string" ? c : c.description;
+      const signs = typeof c === "string" ? "" : c.signs ? "\n\n" + c.signs.join(" | ") : "";
       cards.push({
         id: `cn-${cn.number}-clin`,
         deck: "Clinical — CN",
-        front: `${c.condition}\nWhat cranial nerve is involved and what are the signs?`,
-        back: `${cn.name} (${cn.number})\n\n${c.description}${c.signs ? "\n\n" + c.signs.join(" | ") : ""}`,
+        front: `${condition}\nWhat cranial nerve is involved and what are the signs?`,
+        back: `${cn.name} (${cn.number})\n\n${description}${signs}`,
       });
     });
   });

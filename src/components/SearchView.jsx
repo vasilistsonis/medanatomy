@@ -4,17 +4,30 @@ import { muscles } from "../data/muscles";
 import { mnemonics, quizQuestions } from "../data/mnemonics";
 
 const asText = (value) => Array.isArray(value) ? value.join(" ") : value || "";
+const getCranialNerveType = (cn) => {
+  if (cn.type) return cn.type;
+  const endings = cn.fiberTypes.map((type) => type.at(-1));
+  const hasAfferent = endings.includes("A");
+  const hasEfferent = endings.includes("E");
+  if (hasAfferent && hasEfferent) return "Mixed";
+  return hasEfferent ? "Motor" : "Sensory";
+};
+const clinicalText = (cn) =>
+  (cn.clinicalCorrelations || cn.clinical || [])
+    .map((item) => typeof item === "string" ? item : `${item.condition} ${item.description}`)
+    .join(" ");
 
 function buildIndex() {
   const items = [];
   cranialNerves.forEach((cn) => {
+    const cnType = getCranialNerveType(cn);
     items.push({
       id: `cn-${cn.number}`,
       type: "Cranial Nerve",
       title: `${cn.number} — ${cn.name}`,
       subtitle: cn.nickname,
-      body: [cn.type, cn.fiberTypes.join(", "), cn.foramen, asText(cn.function), cn.clinicalCorrelations.map((c) => c.condition + " " + c.description).join(" ")].join(" "),
-      tags: [cn.type, cn.number],
+      body: [cnType, cn.fiberTypes.join(", "), cn.foramen, asText(cn.function), clinicalText(cn)].join(" "),
+      tags: [cnType, cn.number],
     });
   });
   muscles.forEach((m) => {
@@ -41,7 +54,7 @@ function buildIndex() {
     items.push({
       id: `qz-${i}`,
       type: "Quiz Question",
-      title: q.question.slice(0, 80) + "...",
+      title: `${q.question || "Quiz question"}`.slice(0, 80) + "...",
       subtitle: q.category,
       body: [q.question, q.answer, q.explanation].join(" "),
       tags: [q.category],
