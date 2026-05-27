@@ -1,5 +1,40 @@
 import { useState, useMemo, useEffect } from "react";
 import { CN_DATA, MUSCLES_DATA, MNEMONICS_DATA, QUIZ_DATA } from "./data/uiData";
+
+const PROFILE_KEY = "medanatomy.profile.v1";
+const DEFAULT_PROFILE = {
+  name: "Eirini Tsigenopoulou",
+  studyGoal: "",
+  dailyTarget: 20,
+  currentStreak: 0,
+  longestStreak: 0,
+};
+
+function loadProfile() {
+  try {
+    const saved = localStorage.getItem(PROFILE_KEY);
+    return saved ? { ...DEFAULT_PROFILE, ...JSON.parse(saved) } : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(profile) {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+}
+
+function getFirstName(name) {
+  return (name || DEFAULT_PROFILE.name).trim().split(/\s+/)[0];
+}
+
+function getInitials(name) {
+  return (name || DEFAULT_PROFILE.name)
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
 // ─── Shared atoms ─────────────────────────────────────────────────────────────
 const Icon = {
   Dashboard: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
@@ -84,7 +119,7 @@ function NavItem({ n, active, onClick }) {
 }
 
 // ─── Topbar ───────────────────────────────────────────────────────────────────
-function Topbar({ crumb }) {
+function Topbar({ crumb, profile, onEditProfile }) {
   return (
     <div className="topbar">
       <div className="crumbs">MedAnatomy <span style={{opacity:0.4, margin:"0 8px"}}>/</span> <em>{crumb}</em></div>
@@ -93,10 +128,10 @@ function Topbar({ crumb }) {
         <span>Search anatomy, nerves, muscles…</span>
         <kbd>⌘ K</kbd>
       </div>
-      <div className="user-chip">
-        <div className="avatar">JS</div>
-        <span>J. Singh · MS2</span>
-      </div>
+      <button className="user-chip" onClick={onEditProfile} title="Edit local profile">
+        <div className="avatar">{getInitials(profile.name)}</div>
+        <span>{profile.name} · {profile.dailyTarget} cards/day</span>
+      </button>
     </div>
   );
 }
@@ -105,11 +140,13 @@ function Topbar({ crumb }) {
 // ─── Dashboard view ───────────────────────────────────────────────────────────
 const DIcon = Icon;
 
-function Dashboard({ go }) {
+function Dashboard({ go, profile }) {
+  const firstName = getFirstName(profile.name);
+  const cardsDue = profile.dailyTarget || DEFAULT_PROFILE.dailyTarget;
   const kpis = [
     { glyph: "12", color: "var(--teal)", glow: "var(--teal-glow)", value: "12", label: "Cranial Nerves", sub: "I–XII covered", view: "cranial" },
     { glyph: <DIcon.Muscle />, color: "var(--blue)", glow: "var(--blue-glow)", value: "127", label: "Muscles", sub: "OIAN + Clinical", view: "muscles" },
-    { glyph: <DIcon.Card />, color: "var(--amber)", glow: "var(--amber-glow)", value: "248", label: "Flashcards", sub: "32 due today", view: "flashcards" },
+    { glyph: <DIcon.Card />, color: "var(--amber)", glow: "var(--amber-glow)", value: "248", label: "Flashcards", sub: `${cardsDue} daily target`, view: "flashcards" },
     { glyph: <DIcon.Mnemonic />, color: "var(--purple)", glow: "var(--purple-glow)", value: "30", label: "Mnemonics", sub: "All systems", view: "mnemonics" },
   ];
 
@@ -141,15 +178,15 @@ function Dashboard({ go }) {
       <div className="hero-card">
         <div className="hero-row">
           <div>
-            <div className="greeting">Good evening, Jay</div>
+            <div className="greeting">Good evening, {firstName}</div>
             <h2>Pick up where you left off — <span style={{color:"var(--teal)", fontStyle:"italic"}}>CN VII localisation</span></h2>
-            <p className="hero-meta">32 cards due, 4 weak areas flagged. Ten minutes of recall practice will keep your streak alive.</p>
+            <p className="hero-meta">{cardsDue} cards daily target, 4 weak areas flagged. Ten minutes of recall practice will keep your streak alive.</p>
           </div>
           <div className="streak-block">
-            <div className="streak-num">14</div>
+            <div className="streak-num">{profile.currentStreak || 0}</div>
             <div className="streak-meta">
               <strong>day streak</strong>
-              <span>longest · 22d</span>
+              <span>longest · {profile.longestStreak || 0}d</span>
             </div>
           </div>
         </div>
@@ -773,9 +810,58 @@ const CRUMB = {
   search: "Search",
 };
 
+function WelcomeSetup({ initialProfile, onStart }) {
+  const [name, setName] = useState(initialProfile?.name || DEFAULT_PROFILE.name);
+  const [studyGoal, setStudyGoal] = useState(initialProfile?.studyGoal || "");
+  const [dailyTarget, setDailyTarget] = useState(initialProfile?.dailyTarget || DEFAULT_PROFILE.dailyTarget);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const profile = {
+      ...DEFAULT_PROFILE,
+      ...initialProfile,
+      name: name.trim() || DEFAULT_PROFILE.name,
+      studyGoal: studyGoal.trim(),
+      dailyTarget: Math.max(1, Number(dailyTarget) || DEFAULT_PROFILE.dailyTarget),
+    };
+    saveProfile(profile);
+    onStart(profile);
+  };
+
+  return (
+    <div className="welcome-screen">
+      <form className="welcome-card" onSubmit={submit}>
+        <div className="welcome-mark">✚</div>
+        <div className="eyebrow">Local profile</div>
+        <h1>Welcome to MedAnatomy</h1>
+        <p>Your progress is stored privately in this browser so the dashboard can show a personal target and streak.</p>
+
+        <label className="setup-field">
+          <span>Name</span>
+          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Eirini Tsigenopoulou" />
+        </label>
+
+        <label className="setup-field">
+          <span>Study goal</span>
+          <input value={studyGoal} onChange={(event) => setStudyGoal(event.target.value)} placeholder="e.g. Master cranial nerves before exams" />
+        </label>
+
+        <label className="setup-field">
+          <span>Daily target</span>
+          <input type="number" min="1" value={dailyTarget} onChange={(event) => setDailyTarget(event.target.value)} />
+        </label>
+
+        <button className="start-study-btn" type="submit">Start studying</button>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
   const [view, setView] = useState("dashboard");
   const [mini, setMini] = useState(false);
+  const [profile, setProfile] = useState(() => loadProfile());
+  const [editingProfile, setEditingProfile] = useState(false);
 
   // keyboard nav
   useEffect(() => {
@@ -794,22 +880,26 @@ export default function App() {
 
   const renderView = () => {
     switch (view) {
-      case "dashboard": return <Dashboard go={setView} />;
+      case "dashboard": return <Dashboard go={setView} profile={profile} />;
       case "cranial": return <CranialView />;
       case "muscles": return <MusclesView />;
       case "flashcards": return <FlashcardsView />;
       case "quiz": return <QuizView />;
       case "mnemonics": return <MnemonicsView />;
       case "search": return <SearchView />;
-      default: return <Dashboard go={setView} />;
+      default: return <Dashboard go={setView} profile={profile} />;
     }
   };
+
+  if (!profile || editingProfile) {
+    return <WelcomeSetup initialProfile={profile} onStart={(nextProfile) => { setProfile(nextProfile); setEditingProfile(false); }} />;
+  }
 
   return (
     <div className={`app-shell ${mini ? "mini" : ""}`}>
       <Sidebar view={view} setView={setView} mini={mini} setMini={setMini} />
       <main className="main">
-        <Topbar crumb={CRUMB[view]} />
+        <Topbar crumb={CRUMB[view]} profile={profile} onEditProfile={() => setEditingProfile(true)} />
         <div className="view-scroll">
           {renderView()}
         </div>
