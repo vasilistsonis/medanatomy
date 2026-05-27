@@ -3,6 +3,8 @@ import { cranialNerves } from "../data/cranialNerves";
 import { muscles } from "../data/muscles";
 import { mnemonics } from "../data/mnemonics";
 
+const asList = (value) => Array.isArray(value) ? value : [value].filter(Boolean);
+
 function buildCards() {
   const cards = [];
 
@@ -11,7 +13,7 @@ function buildCards() {
       id: `cn-${cn.number}-func`,
       deck: "Cranial Nerves",
       front: `${cn.number} — ${cn.name}\nWhat are its fiber types and primary function?`,
-      back: `Fiber types: ${cn.fiberTypes.join(", ")}\n\n${cn.function.join("\n")}`,
+      back: `Fiber types: ${cn.fiberTypes.join(", ")}\n\n${asList(cn.function).join("\n")}`,
     });
     cards.push({
       id: `cn-${cn.number}-foramen`,

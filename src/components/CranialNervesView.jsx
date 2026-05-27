@@ -11,6 +11,8 @@ const FIBER_COLORS = {
   SVA: "#f7d25b",
 };
 
+const asList = (value) => Array.isArray(value) ? value : [value].filter(Boolean);
+
 export default function CranialNervesView() {
   const [selected, setSelected] = useState(null);
   const [filterType, setFilterType] = useState("all");
@@ -91,7 +93,7 @@ export default function CranialNervesView() {
                 <div className="detail-section">
                   <div className="detail-section-title">Nuclei</div>
                   <div className="detail-list">
-                    {selected.nuclei.map((n, i) => <div key={i} className="detail-list-item">• {n}</div>)}
+                    {asList(selected.nuclei).map((n, i) => <div key={i} className="detail-list-item">• {n}</div>)}
                   </div>
                 </div>
               )}
@@ -121,7 +123,7 @@ export default function CranialNervesView() {
               <div className="detail-section">
                 <div className="detail-section-title">Function</div>
                 <div className="detail-list">
-                  {selected.function.map((f, i) => <div key={i} className="detail-list-item">▸ {f}</div>)}
+                  {asList(selected.function).map((f, i) => <div key={i} className="detail-list-item">▸ {f}</div>)}
                 </div>
               </div>
 

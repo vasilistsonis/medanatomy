@@ -3,6 +3,8 @@ import { cranialNerves } from "../data/cranialNerves";
 import { muscles } from "../data/muscles";
 import { mnemonics, quizQuestions } from "../data/mnemonics";
 
+const asText = (value) => Array.isArray(value) ? value.join(" ") : value || "";
+
 function buildIndex() {
   const items = [];
   cranialNerves.forEach((cn) => {
@@ -11,7 +13,7 @@ function buildIndex() {
       type: "Cranial Nerve",
       title: `${cn.number} — ${cn.name}`,
       subtitle: cn.nickname,
-      body: [cn.type, cn.fiberTypes.join(", "), cn.foramen, cn.function.join(" "), cn.clinicalCorrelations.map((c) => c.condition + " " + c.description).join(" ")].join(" "),
+      body: [cn.type, cn.fiberTypes.join(", "), cn.foramen, asText(cn.function), cn.clinicalCorrelations.map((c) => c.condition + " " + c.description).join(" ")].join(" "),
       tags: [cn.type, cn.number],
     });
   });
